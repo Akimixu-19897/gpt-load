@@ -12,6 +12,8 @@ jobs:
     permissions:
       packages: write
       contents: read
+    env:
+      HAS_DOCKERHUB: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,7 +27,7 @@ jobs:
           platforms: arm64
 
       - name: Log in to Docker Hub
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        if: ${{ env.HAS_DOCKERHUB == 'true' }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -38,12 +40,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
+      - name: Extract GHCR metadata
+        id: meta_ghcr
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' && 'tbphp/gpt-load' || '' }}
             ghcr.io/${{ github.repository }}
           flavor: |
             latest=false
@@ -52,15 +53,44 @@ jobs:
             type=raw,value=beta,enable=${{ contains(github.ref, '-beta') }}
             type=raw,value=latest,enable=${{ !contains(github.ref, '-') }}
 
-      - name: Build and push Docker image
-        id: build
+      - name: Build and push GHCR image
+        id: build_ghcr
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta_ghcr.outputs.tags }}
+          labels: ${{ steps.meta_ghcr.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ github.ref_name }}
+
+      - name: Extract Docker Hub metadata
+        if: ${{ env.HAS_DOCKERHUB == 'true' }}
+        id: meta_dockerhub
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            tbphp/gpt-load
+          flavor: |
+            latest=false
+          tags: |
+            type=ref,event=tag
+            type=raw,value=beta,enable=${{ contains(github.ref, '-beta') }}
+            type=raw,value=latest,enable=${{ !contains(github.ref, '-') }}
+
+      - name: Build and push Docker Hub image
+        if: ${{ env.HAS_DOCKERHUB == 'true' }}
+        id: build_dockerhub
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta_dockerhub.outputs.tags }}
+          labels: ${{ steps.meta_dockerhub.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
