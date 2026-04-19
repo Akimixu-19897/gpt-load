@@ -18,8 +18,10 @@ For detailed documentation, please visit [Official Documentation](https://www.gp
 - **Transparent Proxy**: Complete preservation of native API formats, supporting OpenAI, Google Gemini, and Anthropic Claude among other formats
 - **Intelligent Key Management**: High-performance key pool with group-based management, automatic rotation, and failure recovery
 - **Load Balancing**: Weighted load balancing across multiple upstream endpoints to enhance service availability
+- **Priority Routing**: Standard groups can fall back by key priority, while aggregate groups can fall back by subgroup priority
 - **Smart Failure Handling**: Automatic key blacklist management and recovery mechanisms to ensure service continuity
 - **Dynamic Configuration**: System settings and group configurations support hot-reload without requiring restarts
+- **Flexible Validation Payloads**: Key validation supports Chat, Responses Simple, and Responses Messages payload modes for better upstream compatibility
 - **Enterprise Architecture**: Distributed leader-follower deployment supporting horizontal scaling and high availability
 - **Modern Management**: Vue 3-based web management interface that is intuitive and user-friendly
 - **Comprehensive Monitoring**: Real-time statistics, health checks, and detailed request logging
@@ -262,6 +264,14 @@ Supported Proxy Protocol Formats:
 | Key Validation Interval    | `key_validation_interval_minutes` | 60      | ✅             | Background scheduled key validation cycle (minutes)                        |
 | Key Validation Concurrency | `key_validation_concurrency`      | 10      | ✅             | Concurrency for background validation of invalid keys                      |
 | Key Validation Timeout     | `key_validation_timeout_seconds`  | 20      | ✅             | API request timeout for validating individual keys in background (seconds) |
+
+**Group Routing and Validation Modes:**
+
+- **Standard group key selection mode**: Supports `Weight Mode` and `Priority Mode`. Weight mode keeps the original behavior; priority mode uses the key `weight` field as a priority value and selects from highest to lowest.
+- **Same-priority behavior**: When multiple keys share the same priority value, GPT-Load uses a stable fallback order instead of round-robin within the same priority tier.
+- **Aggregate group subgroup selection mode**: Supports `Weight Mode` and `Priority Mode`. Priority mode also reuses the subgroup `weight` field, where larger values are preferred first.
+- **Validation payload mode**: Standard groups can choose a dedicated payload format for key validation: `Chat Payload`, `Responses Simple Payload`, or `Responses Messages Payload`, which improves compatibility with different relay providers.
+- **Operational note**: Priority mode still works together with the blacklist mechanism. Once the active key or subgroup is blacklisted, GPT-Load automatically switches to the next available priority target.
 
 </details>
 
