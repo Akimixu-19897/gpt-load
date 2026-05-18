@@ -95,6 +95,7 @@ docker pull ghcr.io/akimixu-19897/gpt-load:v1.4.7-akimixu.2
 ```bash
 docker run -d \
   --name gpt-load \
+  --restart unless-stopped \
   -p 3001:3001 \
   -e PORT=3001 \
   -e HOST=0.0.0.0 \
@@ -109,6 +110,7 @@ docker run -d \
 ```bash
 docker run -d \
   --name gpt-load \
+  --restart unless-stopped \
   -p 3002:3001 \
   -e PORT=3001 \
   -e HOST=0.0.0.0 \
@@ -154,6 +156,18 @@ docker inspect gpt-load --format '{{.Config.Image}}'
 
 ```bash
 docker inspect gpt-load --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}'
+```
+
+检查开机自启策略：
+
+```bash
+docker inspect gpt-load --format '{{.HostConfig.RestartPolicy.Name}}'
+```
+
+预期输出：
+
+```bash
+unless-stopped
 ```
 
 预期挂载结果应类似：

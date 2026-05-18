@@ -50,6 +50,7 @@ docker rm gpt-load
 # 4. 使用同一个数据目录启动新容器
 docker run -d \
   --name gpt-load \
+  --restart unless-stopped \
   -p 3001:3001 \
   -e PORT=3001 \
   -e HOST=0.0.0.0 \
@@ -81,6 +82,7 @@ cp -a BACKUP_DIR data-ghcr-3001
 
 docker run -d \
   --name gpt-load \
+  --restart unless-stopped \
   -p 3001:3001 \
   -e PORT=3001 \
   -e HOST=0.0.0.0 \
@@ -115,4 +117,7 @@ docker inspect gpt-load --format '{{range .Mounts}}{{println .Source "->" .Desti
 
 # 查看健康状态
 curl http://localhost:3001/health
+
+# 查看开机自启策略
+docker inspect gpt-load --format '{{.HostConfig.RestartPolicy.Name}}'
 ```
